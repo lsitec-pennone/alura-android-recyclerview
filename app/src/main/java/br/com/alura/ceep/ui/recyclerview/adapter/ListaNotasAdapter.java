@@ -9,10 +9,13 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import br.com.alura.ceep.R;
 import br.com.alura.ceep.model.Nota;
+import br.com.alura.ceep.ui.recyclerview.adapter.listener.OnItemClickListener;
 
 // Adapter para a RecyclerView
 // informamos que usaremos apenas a nossa classe NotaViewHolder:
@@ -23,10 +26,19 @@ public class ListaNotasAdapter extends RecyclerView.Adapter<ListaNotasAdapter.No
     private final List<Nota> notas;
     private final Context context;
 
+    // "declara" um elemento da interface
+    private OnItemClickListener onItemClickListener;
+
     // Context para fazer o inflate e List<Nota> para utilizarmos nos métodos
     public ListaNotasAdapter(Context context, List<Nota> notas) {
         this.context = context;
         this.notas = notas;
+    }
+
+    // setter que permite que o ClickListener do adapter seja implementado
+    // no método configuraAdapter() na ListaNotasActiviy
+    public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
+        this.onItemClickListener = onItemClickListener;
     }
 
     // método que cria os containers de views que ficarão visíveis
@@ -60,12 +72,29 @@ public class ListaNotasAdapter extends RecyclerView.Adapter<ListaNotasAdapter.No
         return notas.size();
     }
 
+    // altera a nota editada
+    public void altera(int posicao, Nota nota) {
+        notas.set(posicao, nota); // altera informação da nota na lista de notas
+        notifyItemChanged(posicao); // verifica alterações evitando erros de sobreposição
+    }
+
+    public void remove(int posicao) {
+        notas.remove(posicao); // remove nota com base na posição
+        notifyItemRemoved(posicao); // verifica alterações evitando erros de sobreposição
+    }
+
+    public void troca(int posicaoInicial, int posicaoFinal) {
+        Collections.swap(notas, posicaoInicial, posicaoFinal); // troca notas com base na posição
+        notifyItemMoved(posicaoInicial, posicaoFinal); // verifica alterações evitando erros de sobreposição
+    }
+
     // criamos uma classe interna que será usada apenas pelo nooso Adapter atual: ListaNotasAdapter
     // a classe representa cada nota da nossa lista
     class NotaViewHolder extends RecyclerView.ViewHolder{
 
         private final TextView titulo;
         private final TextView descricao;
+        private Nota nota;
 
         // construtor do super
         public NotaViewHolder(@NonNull View itemView) {
@@ -74,11 +103,23 @@ public class ListaNotasAdapter extends RecyclerView.Adapter<ListaNotasAdapter.No
             // fazemos o findViewById dentro da classe para melhorarmos o desempenho
             titulo = itemView.findViewById(R.id.item_nota_titulo);
             descricao = itemView.findViewById(R.id.item_nota_descricao);
+
+            // cria um listener para a ViewHolder
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    // informa que a ação de clicar o elemento deve ocorrer
+                    // delega para a activity que o chama
+                    // getAdapterPosition() possui a posição da viewHolder (Nota) na lista
+                    onItemClickListener.onItemClick(nota, getAdapterPosition());
+                }
+            });
         }
 
         // vinculamos as informações da nota às nossas views
         // o vínculo é feito uma única vez e o bind se repete com base no vínculo feito
         public void vincula(Nota nota) {
+            this.nota = nota; // vincula nota para funcionar o clique na ViewHolder
             preencheCampos(nota);
         }
 
